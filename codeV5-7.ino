@@ -1,3 +1,52 @@
+# Maze-Solving Robot
+
+A Year 1 team project at University College London (UCL) to design and build an autonomous robot capable of solving an unknown maze using Arduino-based sensing and control.
+
+## 📌 Project Summary
+
+This project was part of Scenario B in UCL's Electronic and Electrical Engineering curriculum. The robot was required to:
+
+- Navigate a maze with unknown layout
+- Detect and avoid unstable front walls using IR proximity sensors
+- Sense rigid side walls using mechanical push buttons
+- Control motion using omni-wheels driven by DC motors
+
+## 🛠️ Features & Implementation
+
+### Hardware:
+- **IR Proximity Sensors**: Detect distance to front walls
+- **Push Buttons**: Detect contact with side walls
+- **Motor Drivers**: Custom-built using NPN transistors and diodes
+- **Arduino**: Central controller for sensors and actuators
+
+### Software:
+- **Arduino C** for motor control, wall detection, and decision logic
+- Modular code structure with setup, readSensors, decide, and drive functions
+- Non-hardcoded logic to allow general maze-solving behavior
+
+## 👨‍🔧 My Contribution
+
+- Designed and assembled all hardware circuits including sensor input and motor driver stages  
+- Assisted in writing the main Arduino code framework and handling sensor integration  
+- Created the navigation **flowchart** and contributed to pathfinding algorithm logic  
+- Participated in testing and debugging throughout the integration phase
+
+## 🔧 Tools & Technologies
+
+- Arduino Uno  
+- Breadboard, NPN transistors, IR emitter/receiver pairs, push buttons  
+- DC power supply, oscilloscope, multimeter  
+- Arduino IDE  
+
+## 📷 Demo
+
+(Insert images or video links of your robot navigating the maze)
+
+## 📄 Report
+
+(If available, attach or link to final project report PDF)
+
+---
 // inputs
 const int leftButtonPin = 2;    // left button
 const int rightButtonPin = 7;   // right button
