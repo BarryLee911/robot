@@ -47,131 +47,144 @@ This project was part of Scenario B in UCL's Electronic and Electrical Engineeri
 (If available, attach or link to final project report PDF)
 
 ---
+
 // inputs
 const int leftButtonPin = 2;    // left button
 const int rightButtonPin = 7;   // right button
 const int infraredSensorPin = A2;  // IR sensor
-// outputs
-const int forwardPinA=3;   // PIN moving foward
-const int forwardPinB=11;   // PIN moving foward
-const int leftPin=5;      // PIN moving leftward
-const int rightPin=6;     // PIN moving rightward
-const int DIRA = 12; 
-const int DIRB = 13; 
-// sensor values
-bool leftHit=0; //the left button status
-bool rightHit=0; //the right button status
-int ir=0;  //IR sensor value
-// variables
-const int irGap=150; //IR sensor threshold value for wall
-const int irSetDis=450; //IR sensor threshold value for when the wall is too close
-// status code
-int lrDirec=1; //0-left 1-right
-int statusCode=0;  //0-LeftRight 1-Move forward to the next stage
 
-void setup(){
+// outputs
+const int forwardPinA = 3;
+const int forwardPinB = 11;
+const int leftPin = 5;
+const int rightPin = 6;
+const int DIRA = 12;
+const int DIRB = 13;
+
+// status
+const int maxWalls = 5000;
+const int irthreshold = 180;
+const int irtooclose = 700;
+
+int wallCount = 0;
+int lrdirection;
+bool leftHit = 0;
+bool rightHit = 0;
+int ir = 0;
+int moveahead = 0;
+long lasttime = -1000;
+long currenttime;
+
+void setup() {
   Serial.begin(9600);
 
-  pinMode(leftButtonPin,INPUT_PULLUP);
-  pinMode(rightButtonPin,INPUT_PULLUP);
-  pinMode(forwardPinA,OUTPUT);
-  pinMode(forwardPinB,OUTPUT);
-  pinMode(leftPin,OUTPUT);
-  pinMode(rightPin,OUTPUT);
-  pinMode(DIRA,OUTPUT);
-  pinMode(DIRB,OUTPUT);
+  pinMode(leftButtonPin, INPUT_PULLUP);
+  pinMode(rightButtonPin, INPUT_PULLUP);
+  pinMode(forwardPinA, OUTPUT);
+  pinMode(forwardPinB, OUTPUT);
+  pinMode(leftPin, OUTPUT);
+  pinMode(rightPin, OUTPUT);
+  pinMode(DIRA, OUTPUT);
+  pinMode(DIRB, OUTPUT);
 
-  analogWrite(forwardPinA,0);
-  analogWrite(forwardPinB,0);
-  analogWrite(leftPin,0);
-  analogWrite(rightPin,0);
-  digitalWrite(DIRA,HIGH);
-  digitalWrite(DIRB,HIGH);
-}
+  analogWrite(forwardPinA, 0);
+  analogWrite(forwardPinB, 0);
+  digitalWrite(leftPin, LOW);
+  digitalWrite(rightPin, LOW);
+  digitalWrite(DIRA, HIGH);
+  digitalWrite(DIRB, HIGH);
 
-void moveF(int spd){
-  digitalWrite(DIRA,HIGH);
-  digitalWrite(DIRB,HIGH);
-  analogWrite(forwardPinA,spd);
-  analogWrite(forwardPinB,spd);
-}
-void moveB(int spd){
-  digitalWrite(DIRA,LOW);
-  digitalWrite(DIRB,LOW);
-  analogWrite(forwardPinA,spd);
-  analogWrite(forwardPinB,spd);
-}
-void moveL(int spd){
-  analogWrite(leftPin,spd);
-  analogWrite(rightPin,0);
-}
-void moveR(int spd){
-  analogWrite(leftPin,0);
-  analogWrite(rightPin,spd);
-}
-void movelrStop(){
-  analogWrite(leftPin,0);
-  analogWrite(rightPin,0);
-}
-void movefStop(){
-  digitalWrite(DIRA,HIGH);
-  digitalWrite(DIRB,HIGH);
-  analogWrite(forwardPinA,0);
-  analogWrite(forwardPinB,0);
+  lrdirection = 0;
 }
 
 void loop() {
-  //read sensor status
-  leftHit=digitalRead(leftButtonPin)==HIGH;   //read from buttons
-  rightHit=digitalRead(rightButtonPin)==HIGH;
-  ir = analogRead(infraredSensorPin);        //read from IR sensor
-  Serial.print("IR sensor: ");
+  if (wallCount >= maxWalls) {
+    analogWrite(forwardPinA, 0);
+    analogWrite(forwardPinB, 0);
+    digitalWrite(leftPin, LOW);
+    digitalWrite(rightPin, LOW);
+    Serial.println("Maze solved, system stop");
+    while (true);
+  }
+
+  // read sensors
+  leftHit = digitalRead(leftButtonPin) == LOW;
+  rightHit = digitalRead(rightButtonPin) == LOW;
+  ir = analogRead(infraredSensorPin);
+
+  Serial.print("IR: ");
   Serial.print(ir);
-  Serial.print("\tleft button: ");
+  Serial.print("\tLeft: ");
   Serial.print(leftHit);
-  Serial.print("\tright button: ");
+  Serial.print("\tRight: ");
   Serial.println(rightHit);
-  //status and their coresponding movement
-  if(statusCode==0){  //status 0
-    if(lrDirec==0){ //move left
-      moveL(180);
-      if(leftHit==1){
-        lrDirec=1;
-        moveR(180);
-      }
-    }else if(lrDirec==1){ //move right
-      moveR(180);
-      if(rightHit==1){
-        lrDirec=0;
-        moveL(180);
-      }
+
+  if (moveahead == 0) {
+    if (leftHit) lrdirection = 1;
+    else if (rightHit) lrdirection = 0;
+  }
+
+  currenttime = millis();
+
+  if (moveahead == 1) {
+    analogWrite(forwardPinA, 40);
+    analogWrite(forwardPinB, 40);
+    digitalWrite(leftPin, LOW);
+    digitalWrite(rightPin, LOW);
+    Serial.println("action: move forward");
+    delay(50);
+    lasttime += 50;
+    if (ir > irthreshold) {
+      analogWrite(forwardPinA, 0);
+      analogWrite(forwardPinB, 0);
+      moveahead = 0;
+      wallCount++;
+      delay(200);
     }
-    if(ir<irSetDis&&ir>irGap){  //control left-back distance
-      int fspeed=10+0.03*(irSetDis-ir);
-      moveF(fspeed);
-    }else if(ir>irSetDis){
-      int fspeed=10+0.03*(ir-irSetDis);
-      moveB(fspeed);
-    }else{
-      movefStop();
+  } else {
+    if (lrdirection == 1) {
+      analogWrite(forwardPinA, 0);
+      analogWrite(forwardPinB, 0);
+      digitalWrite(leftPin, LOW);
+      digitalWrite(rightPin, HIGH);
+      Serial.println("action: move right");
+    } else {
+      analogWrite(forwardPinA, 0);
+      analogWrite(forwardPinB, 0);
+      digitalWrite(leftPin, HIGH);
+      digitalWrite(rightPin, LOW);
+      Serial.println("action: move left");
     }
-    if(ir<irGap){
-      movefStop();
-      if(lrDirec==0){ //move left
-        moveL(100);
-        lrDirec=1;
-      }else if(lrDirec==1){ //move right
-        moveR(100);
-        lrDirec=0;
-      }
-      delay(350); 
-      statusCode=1;
+  }
+
+  // Enhanced gap detection and center-return logic
+  if (ir < irthreshold) {
+    if (currenttime - lasttime >= 1000) {
+      lasttime = currenttime;
+    } else if (currenttime - lasttime > 275) {
+      long gaptime = currenttime - lasttime;
+
+      // Step 1: move backward half duration
+      digitalWrite(DIRA, LOW);
+      digitalWrite(DIRB, LOW);
+      analogWrite(forwardPinA, 50);
+      analogWrite(forwardPinB, 50);
+      delay(gaptime / 2);
+      analogWrite(forwardPinA, 0);
+      analogWrite(forwardPinB, 0);
+
+      // Step 2: move forward
+      digitalWrite(DIRA, HIGH);
+      digitalWrite(DIRB, HIGH);
+      moveahead = 1;
+      digitalWrite(leftPin, LOW);
+      digitalWrite(rightPin, LOW);
     }
-  }else if(statusCode==1){  //status 1
-    movelrStop();
-    moveF(100);
-    if(ir>irGap){
-      statusCode=0;
-    }
+  } else if (ir > irtooclose) {
+    moveahead = 1;
+    digitalWrite(DIRA, LOW);
+    digitalWrite(DIRB, LOW);
+    digitalWrite(leftPin, LOW);
+    digitalWrite(rightPin, LOW);
   }
 }
